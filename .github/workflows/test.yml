@@ -1,0 +1,28 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+jobs:
+  test:
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install openbvf/tap/bvf
+      - run: swift test
+
+  sanitizers:
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
+    runs-on: macos-15
+    strategy:
+      matrix:
+        sanitizer: [thread, address]
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install openbvf/tap/bvf
+      - run: swift test --sanitize ${{ matrix.sanitizer }}
