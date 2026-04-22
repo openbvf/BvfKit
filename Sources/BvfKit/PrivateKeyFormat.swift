@@ -2,12 +2,12 @@ import Foundation
 import Clibsodium
 
 /// Namespace for encrypted private key format validation.
-enum PrivateKeyFormat {
+public enum PrivateKeyFormat {
 
     /// Parses and validates an encrypted private key JSON blob.
     ///
     /// - Throws: `BvfError.invalidPrivateKeyFormat` on any parse or validation failure
-    static func validate(_ data: Data) throws -> (salt: Data, nonce: Data, ct: Data) {
+    public static func validate(_ data: Data) throws -> (salt: Data, nonce: Data, ct: Data) {
         guard
             let obj = try? JSONSerialization.jsonObject(with: data),
             let dict = obj as? [String: Any],
