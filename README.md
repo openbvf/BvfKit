@@ -1,6 +1,6 @@
 # BvfKit
 
-Swift library for personal encryption. Built on HPKE (RFC 9180) + XChaCha20-Poly1305 secretstream + Argon2id. Minimization of crypto surface and amenability to plaintext never touching disk were primary in design. Sensitive material is mlocked and zeroized on dealloc.
+Swift library for personal encryption. Built on HPKE (RFC 9180) + XChaCha20-Poly1305 secretstream + Argon2id. Minimization of crypto surface and amenability to plaintext never touching disk were primary in design. Sensitive material is zeroized on dealloc; keys and passphrases are additionally mlocked.
 
 Compatible with the canonical implementation [bvf](https://github.com/openbvf/bvf) (Rust), which provides a [library](https://github.com/openbvf/bvf/tree/main/bvf) and [CLI](https://github.com/openbvf/bvf/tree/main/bvf-cli) with key management, batch operations, and long-term format stability independent of this library. See that repo for [SECURITY.md](https://github.com/openbvf/bvf/blob/main/SECURITY.md) and [file format](https://github.com/openbvf/bvf/blob/main/SPEC.md).
 

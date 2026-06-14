@@ -36,6 +36,9 @@ public final class DecryptionState: @unchecked Sendable {
     ///
     /// Call `validateComplete()` after the loop to detect truncation.
     ///
+    /// The returned `Data` is not zeroed on drop; the caller should wipe it
+    /// after use if it should not linger in memory.
+    ///
     /// - Throws: `BvfError.decryptionFailed` on state misuse (already finalized, empty input)
     /// - Throws: `BvfError.authenticationFailed` if authentication fails
     public func decryptChunk(_ ciphertext: Data) throws -> Data? {
@@ -241,8 +244,11 @@ public final class Decrypter: @unchecked Sendable {
                 break
             }
 
-            if let plaintext = try state.decryptChunk(chunk) {
+            if var plaintext = try state.decryptChunk(chunk) {
                 try write(plaintext)
+                plaintext.withUnsafeMutableBytes { ptr in
+                    if let base = ptr.baseAddress { sodium_memzero(base, ptr.count) }
+                }
             }
 
             if state.finalized {
