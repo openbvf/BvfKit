@@ -4,7 +4,7 @@ Swift library for personal encryption. Built on HPKE (RFC 9180) + XChaCha20-Poly
 
 Compatible with the canonical implementation [bvf](https://github.com/openbvf/bvf) (Rust), which provides a [library](https://github.com/openbvf/bvf/tree/main/bvf) and [CLI](https://github.com/openbvf/bvf/tree/main/bvf-cli) with key management, batch operations, and long-term format stability independent of this library. See that repo for [SECURITY.md](https://github.com/openbvf/bvf/blob/main/SECURITY.md) and [file format](https://github.com/openbvf/bvf/blob/main/SPEC.md).
 
-Canonical implementation was written by hand. BvfKit's development was AI-assisted and reviewed by a human line-by-line, with a particular eye on C-interop.
+Canonical implementation was written by hand. BvfKit's development was AI-assisted reviewed by a human line-by-line, with a particular eye on C-interop.
 
 ## Install
 
