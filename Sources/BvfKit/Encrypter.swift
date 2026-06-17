@@ -26,6 +26,9 @@ public final class EncryptionState: @unchecked Sendable {
     ///
     /// Non-final chunks MUST be exactly `BvfConfig.plaintextChunkSize`. Final chunk can be any size.
     ///
+    /// Plaintext is read-only here; the caller is responsible for zeroing
+    /// the source buffer if needed.
+    ///
     /// - Throws: `BvfError.encryptionFailed` if encryption fails or state already finalized
     public func encryptChunk(_ plaintext: Data, isLast: Bool) throws -> Data {
         return try withExclusiveAccess {
@@ -196,10 +199,16 @@ public final class Encrypter: @unchecked Sendable {
             guard let next = try readExact(BvfConfig.plaintextChunkSize, from: read), !next.isEmpty else {
                 let encrypted = try state.encryptChunk(current, isLast: true)
                 try write(encrypted)
+                current.withUnsafeMutableBytes { ptr in
+                    if let base = ptr.baseAddress { sodium_memzero(base, ptr.count) }
+                }
                 break
             }
             let encrypted = try state.encryptChunk(current, isLast: false)
             try write(encrypted)
+            current.withUnsafeMutableBytes { ptr in
+                if let base = ptr.baseAddress { sodium_memzero(base, ptr.count) }
+            }
             current = next
         }
     }

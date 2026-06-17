@@ -12,7 +12,7 @@ jobs:
     if: github.event.pull_request.draft == false || github.event_name == 'push'
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - run: brew install openbvf/tap/bvf
       - run: swift test
 
@@ -23,6 +23,6 @@ jobs:
       matrix:
         sanitizer: [thread, address]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - run: brew install openbvf/tap/bvf
       - run: swift test --sanitize ${{ matrix.sanitizer }}
