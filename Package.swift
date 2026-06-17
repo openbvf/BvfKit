@@ -15,7 +15,7 @@ let package = Package(
     )
   ],
   dependencies: [
-    .package(url: "https://github.com/jedisct1/swift-sodium.git", from: "0.10.0")
+    .package(url: "https://github.com/jedisct1/swift-sodium.git", .upToNextMinor(from: "0.10.0"))
   ],
   targets: [
     .target(
