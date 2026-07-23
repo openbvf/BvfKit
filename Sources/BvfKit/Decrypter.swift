@@ -128,6 +128,19 @@ public final class Decrypter: @unchecked Sendable {
         keyManager.publicKey
     }
 
+    /// Re-encrypts the underlying private key under a new `passphrase`.
+    ///
+    /// Changes the passphrase protecting a stored key: the key is decrypted with
+    /// the old passphrase when this `Decrypter` is created, then re-encrypted here
+    /// with the new one under a fresh salt and nonce. The keypair is unchanged, so
+    /// the resulting blob decrypts to the same public key.
+    ///
+    /// - Returns: JSON Data ready to write to a `.key.enc` file
+    /// - Throws: `BvfError.encryptionFailed` if key derivation or encryption fails
+    public func exportEncryptedPrivateKey(passphrase: String) throws -> Data {
+        try keyManager.exportEncryptedPrivateKey(passphrase: passphrase)
+    }
+
     /// Parse file header and initialize decryption state.
     ///
     /// - Parameter headerData: File header (version + encapsulated key + secretstream header)

@@ -14,7 +14,7 @@ final class KeyManager: @unchecked Sendable {
 
         try ensureSodiumInitialized()
 
-        let (saltData, nonceData, ctData) = try PrivateKeyFormat.validate(encryptedPrivateKey)
+        let (saltData, nonceData, ctData) = try PrivateKeyStore.validate(encryptedPrivateKey)
 
         let keyLen = Int(crypto_secretbox_keybytes())
         var key = [UInt8](repeating: 0, count: keyLen)
@@ -79,6 +79,18 @@ final class KeyManager: @unchecked Sendable {
         }
         self.rawKeyPtr = rawKeyPtr
         self.publicKey = try PublicKeyFormat.encode(Data(publicKeyBytes))
+    }
+
+    /// Re-encrypt the held private key under a new passphrase for storage.
+    /// The key is borrowed from mlocked storage and never copied into a Swift value.
+    func exportEncryptedPrivateKey(passphrase: String) throws -> Data {
+        try PrivateKeyStore.export(
+            privateKey: UnsafeBufferPointer(
+                start: rawKeyPtr.assumingMemoryBound(to: UInt8.self),
+                count: Int(crypto_scalarmult_bytes())
+            ),
+            passphrase: passphrase
+        )
     }
 
     /// Reconstruct a CryptoKit PrivateKey from mlocked storage, call body, then release.
