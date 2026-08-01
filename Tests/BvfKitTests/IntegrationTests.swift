@@ -19,18 +19,11 @@ struct IntegrationTests {
         let keepCount = BvfConfig.headerSize + BvfConfig.ciphertextChunkSize
         let truncatedCiphertext = ciphertext.prefix(keepCount)
 
-        var offset = 0
         let decrypter = try Decrypter(
             encryptedPrivateKey: fixture.encryptedPrivateKey,
             passphrase: fixture.passphrase
         )
-        let (partialData, truncated) = try decrypter.decrypt { size in
-            guard offset < truncatedCiphertext.count else { return nil }
-            let end = min(offset + size, truncatedCiphertext.count)
-            let chunk = truncatedCiphertext[offset..<end]
-            offset = end
-            return Data(chunk)
-        }
+        let (partialData, truncated) = try decryptComplete(ciphertext: Data(truncatedCiphertext), decrypter: decrypter)
 
         #expect(truncated, "truncated ciphertext should set truncated flag")
         #expect(!partialData.isEmpty, "partial data should be non-empty")
@@ -117,6 +110,37 @@ struct IntegrationTests {
         try encrypter.encrypt(plaintext) { ciphertext2.append($0) }
 
         #expect(ciphertext1 != ciphertext2, "two encryptions of the same plaintext should differ")
+    }
+
+    @Test func testRotatePassphraseRoundtrip() throws {
+        let oldPassphrase = "old-passphrase"
+        let newPassphrase = "new-passphrase"
+
+        let keypair = try Keypair.generate()
+        let originalBlob = try keypair.exportEncryptedPrivateKey(passphrase: oldPassphrase)
+
+        // Re-seal under the new passphrase via the old-passphrase Decrypter.
+        let oldDecrypter = try Decrypter(encryptedPrivateKey: originalBlob, passphrase: oldPassphrase)
+        let rotatedBlob = try oldDecrypter.exportEncryptedPrivateKey(passphrase: newPassphrase)
+
+        // Old passphrase no longer opens the rotated blob.
+        #expect(throws: BvfError.wrongPassphrase) {
+            _ = try Decrypter(encryptedPrivateKey: rotatedBlob, passphrase: oldPassphrase)
+        }
+
+        // New passphrase opens it and yields the same keypair.
+        let newDecrypter = try Decrypter(encryptedPrivateKey: rotatedBlob, passphrase: newPassphrase)
+        #expect(newDecrypter.publicKey == keypair.publicKey)
+
+        // A file encrypted to the public key decrypts with the rotated key.
+        let plaintext = Data("rotation survives".utf8)
+        let encrypter = try Encrypter(recipientPublicKey: keypair.publicKey)
+        let ciphertext = try encryptComplete(plaintext: plaintext, encrypter: encrypter)
+
+        let (decrypted, truncated) = try decryptComplete(ciphertext: ciphertext, decrypter: newDecrypter)
+
+        #expect(!truncated)
+        #expect(decrypted == plaintext)
     }
 
     @Test func testMemoryZeroing() throws {

@@ -43,3 +43,14 @@ func encryptComplete(plaintext: Data, encrypter: Encrypter) throws -> Data {
 
     return result
 }
+
+func decryptComplete(ciphertext: Data, decrypter: Decrypter) throws -> (plaintext: Data, truncated: Bool) {
+    var offset = 0
+    return try decrypter.decrypt { size in
+        guard offset < ciphertext.count else { return nil }
+        let end = min(offset + size, ciphertext.count)
+        let chunk = ciphertext[offset..<end]
+        offset = end
+        return Data(chunk)
+    }
+}

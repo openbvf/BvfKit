@@ -53,67 +53,9 @@ public final class Keypair: @unchecked Sendable {
             throw BvfError.invalidKey
         }
 
-        let saltSize = Int(crypto_pwhash_SALTBYTES)
-        var salt = [UInt8](repeating: 0, count: saltSize)
-        guard SecRandomCopyBytes(kSecRandomDefault, saltSize, &salt) == errSecSuccess else {
-            throw BvfError.encryptionFailed
+        return try privateKeyBytes.withUnsafeBufferPointer { pkPtr in
+            try PrivateKeyStore.export(privateKey: pkPtr, passphrase: passphrase)
         }
-
-        let keyLen = Int(crypto_secretbox_keybytes())
-        var key = [UInt8](repeating: 0, count: keyLen)
-
-        var passphraseChars = try convertPassphraseToChars(passphrase)
-        defer { sodium_memzero(&passphraseChars, passphraseChars.count) }
-
-        let pwhashSuccess = try key.withUnsafeMutableBufferPointer { keyPtr in
-            try passphraseChars.withUnsafeBufferPointer { passphrasePtr in
-                try salt.withUnsafeBufferPointer { saltPtr in
-                    try safeArgon2id(key: keyPtr, passphrase: passphrasePtr, salt: saltPtr)
-                }
-            }
-        }
-
-        guard pwhashSuccess else {
-            sodium_memzero(&key, key.count)
-            throw BvfError.encryptionFailed
-        }
-
-        defer { sodium_memzero(&key, key.count) }
-
-        let nonceSize = Int(crypto_secretbox_NONCEBYTES)
-        var nonce = [UInt8](repeating: 0, count: nonceSize)
-        guard SecRandomCopyBytes(kSecRandomDefault, nonceSize, &nonce) == errSecSuccess else {
-            throw BvfError.encryptionFailed
-        }
-
-        let macSize = Int(crypto_secretbox_MACBYTES)
-        var ciphertext = [UInt8](repeating: 0, count: privateKeyBytes.count + macSize)
-
-        let encryptSuccess = try ciphertext.withUnsafeMutableBufferPointer { ctPtr in
-            try privateKeyBytes.withUnsafeBufferPointer { pkPtr in
-                try nonce.withUnsafeBufferPointer { noncePtr in
-                    try key.withUnsafeBufferPointer { keyPtr in
-                        try safeSecretboxEncrypt(ciphertext: ctPtr, plaintext: pkPtr, nonce: noncePtr, key: keyPtr)
-                    }
-                }
-            }
-        }
-
-        guard encryptSuccess else {
-            throw BvfError.encryptionFailed
-        }
-
-        let jsonDict: [String: String] = [
-            "salt": Data(salt).base64EncodedString(),
-            "nonce": Data(nonce).base64EncodedString(),
-            "ct": Data(ciphertext).base64EncodedString()
-        ]
-
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: jsonDict, options: [.prettyPrinted, .sortedKeys]) else {
-            throw BvfError.encryptionFailed
-        }
-
-        return jsonData
     }
 
     deinit {

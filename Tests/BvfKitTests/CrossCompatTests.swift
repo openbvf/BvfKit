@@ -158,14 +158,7 @@ final class CrossCompatTests {
         let ciphertext = try Data(contentsOf: ciphertextFile)
         let decrypter = try Decrypter(encryptedPrivateKey: encryptedPrivateKey, passphrase: "hi")
 
-        var offset = 0
-        let (decrypted, truncated) = try decrypter.decrypt { size in
-            guard offset < ciphertext.count else { return nil }
-            let end = min(offset + size, ciphertext.count)
-            let chunk = ciphertext[offset..<end]
-            offset = end
-            return Data(chunk)
-        }
+        let (decrypted, truncated) = try decryptComplete(ciphertext: ciphertext, decrypter: decrypter)
 
         #expect(!truncated, "Ciphertext should not be truncated")
         #expect(decrypted == plaintext, "Decrypted data should match original plaintext")
@@ -187,14 +180,7 @@ final class CrossCompatTests {
         let ciphertext = try Data(contentsOf: ciphertextFile)
         let decrypter = try Decrypter(encryptedPrivateKey: encryptedPrivateKey, passphrase: "hi")
 
-        var offset = 0
-        let (decrypted, truncated) = try decrypter.decrypt { size in
-            guard offset < ciphertext.count else { return nil }
-            let end = min(offset + size, ciphertext.count)
-            let chunk = ciphertext[offset..<end]
-            offset = end
-            return Data(chunk)
-        }
+        let (decrypted, truncated) = try decryptComplete(ciphertext: ciphertext, decrypter: decrypter)
 
         #expect(!truncated, "Ciphertext should not be truncated")
         #expect(decrypted == plaintext, "Decrypted empty data should be empty")
@@ -332,14 +318,7 @@ final class CrossCompatTests {
 
         // Swift decrypts with Rust private key
         let decrypter = try Decrypter(encryptedPrivateKey: encryptedPrivateKey, passphrase: "hi")
-        var offset = 0
-        let (decrypted, truncated) = try decrypter.decrypt { size in
-            guard offset < ciphertext.count else { return nil }
-            let end = min(offset + size, ciphertext.count)
-            let chunk = ciphertext[offset..<end]
-            offset = end
-            return Data(chunk)
-        }
+        let (decrypted, truncated) = try decryptComplete(ciphertext: ciphertext, decrypter: decrypter)
 
         #expect(!truncated)
         #expect(decrypted == plaintext, "Swift should decrypt with Rust-generated key")

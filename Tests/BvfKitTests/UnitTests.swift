@@ -37,7 +37,7 @@ struct UnitTests {
         ]
         let data = try JSONSerialization.data(withJSONObject: json)
 
-        let (saltOut, nonceOut, ctOut) = try PrivateKeyFormat.validate(data)
+        let (saltOut, nonceOut, ctOut) = try PrivateKeyStore.validate(data)
 
         #expect(saltOut == salt)
         #expect(nonceOut == nonce)
@@ -48,7 +48,7 @@ struct UnitTests {
         let data = "not valid json".data(using: .utf8)!
 
         #expect(throws: BvfError.invalidPrivateKeyFormat) {
-            _ = try PrivateKeyFormat.validate(data)
+            _ = try PrivateKeyStore.validate(data)
         }
     }
 
@@ -65,7 +65,7 @@ struct UnitTests {
         let data = try JSONSerialization.data(withJSONObject: json)
 
         #expect(throws: BvfError.invalidPrivateKeyFormat) {
-            _ = try PrivateKeyFormat.validate(data)
+            _ = try PrivateKeyStore.validate(data)
         }
     }
 
@@ -82,7 +82,7 @@ struct UnitTests {
         let data = try JSONSerialization.data(withJSONObject: json)
 
         #expect(throws: BvfError.invalidPrivateKeyFormat) {
-            _ = try PrivateKeyFormat.validate(data)
+            _ = try PrivateKeyStore.validate(data)
         }
     }
 
@@ -99,7 +99,7 @@ struct UnitTests {
         let data = try JSONSerialization.data(withJSONObject: json)
 
         #expect(throws: BvfError.invalidPrivateKeyFormat) {
-            _ = try PrivateKeyFormat.validate(data)
+            _ = try PrivateKeyStore.validate(data)
         }
     }
 }
