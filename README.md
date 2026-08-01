@@ -30,24 +30,43 @@ Requires Swift 6.1+. macOS 15+, iOS 17+, or watchOS 10+.
 
 ### Stream
 
+Chunking is handled automatically; memory stays constant regardless of size.
+
 ```swift
+// Generate a keypair and export the private key protected by a passphrase
 let keypair = try Keypair.generate()
 let passphrase = "my passphrase"
 let encryptedKey = try keypair.exportEncryptedPrivateKey(passphrase: passphrase)
 
-// Encrypt from Data
-let encrypter = try Encrypter(recipientPublicKey: keypair.publicKey)
+// Encrypt
+let plaintext = Data("hello world".utf8)
 var ciphertext = Data()
-try encrypter.encrypt(Data("hello world".utf8)) { ciphertext.append($0) }
-
-// Encrypt from closures (streaming, constant memory)
 let encrypter = try Encrypter(recipientPublicKey: keypair.publicKey)
-try encrypter.encrypt(from: read, to: write)
+try encrypter.encrypt(from: reading(plaintext), to: { ciphertext.append($0) })
 
 // Decrypt
+var recovered = Data()
 let decrypter = try Decrypter(encryptedPrivateKey: encryptedKey, passphrase: passphrase)
-try decrypter.decrypt(from: read, to: write)
+try decrypter.decrypt(from: reading(ciphertext), to: { recovered.append($0) })
+
+assert(recovered == plaintext)  // "hello world"
 ```
+
+The API can read and write through closures, so any source or sink works. This example's helper reads a `Data` in memory; writing is a plain `append`:
+
+```swift
+func reading(_ data: Data) -> (Int) -> Data? {
+    var offset = 0
+    return { count in
+        guard offset < data.count else { return nil }   // nil at EOF
+        let end = min(offset + count, data.count)
+        defer { offset = end }
+        return data.subdata(in: offset..<end)
+    }
+}
+```
+
+To stream files instead of buffering in memory, pass file-backed closures: a read that returns `FileHandle.read(upToCount:)` and a write that calls `FileHandle.write(contentsOf:)`.
 
 ### Push
 
@@ -69,9 +88,13 @@ ciphertext.append(try encState.encryptChunk(secret, isLast: true))
 let decrypter = try Decrypter(encryptedPrivateKey: encryptedKey, passphrase: passphrase)
 let decState = try decrypter.start(header: ciphertext.prefix(BvfConfig.headerSize))
 let body = ciphertext.suffix(from: BvfConfig.headerSize)
-let chunk1 = try decState.decryptChunk(Data(body.prefix(BvfConfig.ciphertextChunkSize)))
-let chunk2 = try decState.decryptChunk(Data(body.dropFirst(BvfConfig.ciphertextChunkSize)))
+var recovered = try decState.decryptChunk(body.prefix(BvfConfig.ciphertextChunkSize))!
+recovered += try decState.decryptChunk(body.dropFirst(BvfConfig.ciphertextChunkSize))!
 try decState.validateComplete()
-// chunk1! + chunk2! == secret + secret
+assert(recovered == secret + secret)
 ```
+
+## More examples
+
+The snippets above are illustrative. For runnable, end-to-end usage see the test suite in `Tests/BvfKitTests/` and the open-source apps built on BvfKit.
 
